@@ -15,7 +15,7 @@ import torchvision.datasets as datasets
 import torchvision.models as models
 import torchvision.transforms as transforms
 
-
+import collections.abc
 def train_loader(path, batch_size, num_workers=4, pin_memory=False, normalize=None):
     if normalize is None:
         normalize = transforms.Normalize(
@@ -118,7 +118,7 @@ class Scale(object):
 
     def __init__(self, size, interpolation=Image.BILINEAR):
         assert isinstance(size, int) or (isinstance(
-            size, collections.Iterable) and len(size) == 2)
+            size, collections.abc.Iterable) and len(size) == 2)
         self.size = size
         self.interpolation = interpolation
 
