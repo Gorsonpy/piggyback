@@ -12,36 +12,38 @@ DEFAULT_THRESHOLD = 5e-3
 class Binarizer(torch.autograd.Function):
     """Binarizes {0, 1} a real valued tensor."""
 
-    def __init__(self, threshold=DEFAULT_THRESHOLD):
-        super(Binarizer, self).__init__()
-        self.threshold = threshold
-
-    def forward(self, inputs):
+    @staticmethod
+    def forward(ctx, inputs, threshold=DEFAULT_THRESHOLD):
+        # 保存阈值用于backward
+        ctx.threshold = threshold
         outputs = inputs.clone()
-        outputs[inputs.le(self.threshold)] = 0
-        outputs[inputs.gt(self.threshold)] = 1
+        outputs[inputs.le(threshold)] = 0
+        outputs[inputs.gt(threshold)] = 1
         return outputs
 
-    def backward(self, gradOutput):
-        return gradOutput
+    @staticmethod
+    def backward(ctx, gradOutput):
+        # 直通梯度，不考虑阈值
+        return gradOutput, None  # 第二个None对应threshold参数
 
 
 class Ternarizer(torch.autograd.Function):
     """Ternarizes {-1, 0, 1} a real valued tensor."""
 
-    def __init__(self, threshold=DEFAULT_THRESHOLD):
-        super(Ternarizer, self).__init__()
-        self.threshold = threshold
-
-    def forward(self, inputs):
+    @staticmethod
+    def forward(ctx, inputs, threshold=DEFAULT_THRESHOLD):
+        # 保存阈值用于backward
+        ctx.threshold = threshold
         outputs = inputs.clone()
         outputs.fill_(0)
         outputs[inputs < 0] = -1
-        outputs[inputs > self.threshold] = 1
+        outputs[inputs > threshold] = 1
         return outputs
 
-    def backward(self, gradOutput):
-        return gradOutput
+    @staticmethod
+    def backward(ctx, gradOutput):
+        # 直通梯度，不考虑阈值
+        return gradOutput, None  # 第二个None对应threshold参数
 
 
 class ElementWiseConv2d(nn.Module):
@@ -61,6 +63,7 @@ class ElementWiseConv2d(nn.Module):
 
         if threshold is None:
             threshold = DEFAULT_THRESHOLD
+        self.threshold = threshold
         self.info = {
             'threshold_fn': threshold_fn,
             'threshold': threshold,
@@ -99,19 +102,19 @@ class ElementWiseConv2d(nn.Module):
         self.mask_real = Parameter(self.mask_real)
 
         # Initialize the thresholder.
+        # 存储阈值函数类型而不是实例
         if threshold_fn == 'binarizer':
-            print('Calling binarizer with threshold:', threshold)
-            self.threshold_fn = Binarizer(threshold=threshold)
+            print('Using binarizer with threshold:', threshold)
+            self.threshold_fn = Binarizer
         elif threshold_fn == 'ternarizer':
-            print('Calling ternarizer with threshold:', threshold)
-            self.threshold_fn = Ternarizer(threshold=threshold)
+            print('Using ternarizer with threshold:', threshold)
+            self.threshold_fn = Ternarizer
 
     def forward(self, input):
-        # Get binarized/ternarized mask from real-valued mask.
-        mask_thresholded = self.threshold_fn(self.mask_real)
-        # Mask weights with above mask.
+        # 调用静态方法
+        mask_thresholded = self.threshold_fn.apply(self.mask_real, self.threshold)
+        # 后续代码保持不变
         weight_thresholded = mask_thresholded * self.weight
-        # Perform conv using modified weight.
         return F.conv2d(input, weight_thresholded, self.bias, self.stride,
                         self.padding, self.dilation, self.groups)
 
@@ -167,6 +170,7 @@ class ElementWiseLinear(nn.Module):
 
         if threshold is None:
             threshold = DEFAULT_THRESHOLD
+        self.threshold = threshold
         self.info = {
             'threshold_fn': threshold_fn,
             'threshold': threshold,
@@ -192,16 +196,15 @@ class ElementWiseLinear(nn.Module):
 
         # Initialize the thresholder.
         if threshold_fn == 'binarizer':
-            self.threshold_fn = Binarizer(threshold=threshold)
+            self.threshold_fn = Binarizer
         elif threshold_fn == 'ternarizer':
-            self.threshold_fn = Ternarizer(threshold=threshold)
+            self.threshold_fn = Ternarizer
 
     def forward(self, input):
-        # Get binarized/ternarized mask from real-valued mask.
-        mask_thresholded = self.threshold_fn(self.mask_real)
-        # Mask weights with above mask.
+        # 调用静态方法
+        mask_thresholded = self.threshold_fn.apply(self.mask_real, self.threshold)
+        # 后续代码保持不变
         weight_thresholded = mask_thresholded * self.weight
-        # Get output using modified weight.
         return F.linear(input, weight_thresholded, self.bias)
 
     def __repr__(self):
