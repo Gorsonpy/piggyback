@@ -3,7 +3,7 @@ import shutil
 from tqdm import tqdm
 
 # 设置路径
-cub_root = '/root/gorsonpy/TransferGenie/dataset/CUB_200_2011'  # 修改为您的CUB数据集根目录
+cub_root = '/root/gorsonpy/TransferGenie/dataset/CUB_200_2011/CUB_200_2011'  # 修改为您的CUB数据集根目录
 target_root = '/root/gorsonpy/dataset/CUB-200-2011-ImageFolder'  # 修改为目标目录
 train_dir = os.path.join(target_root, 'train')
 test_dir = os.path.join(target_root, 'test')
