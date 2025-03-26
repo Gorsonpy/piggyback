@@ -27,7 +27,7 @@ NUM_EPOCHS=30
 
 for RUN_ID in `seq 1 $NUM_RUNS`;
 do
-  for DATASET in stanford_cars_cropped cubs_cropped flowers wikiart sketches; do
+  for DATASET in cubs_cropped; do
     mkdir ../checkpoints/$DATASET
     mkdir ../logs/$DATASET
 
