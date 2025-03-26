@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torchvision import models
+from torchvision.models import ResNet50_Weights
 
 import modnets
 import modnets.layers as nl
@@ -178,12 +179,12 @@ class ModifiedResNet(ModifiedVGG16):
     def make_model(self, mask_init, mask_scale, threshold_fn, original):
         """Creates the model."""
         if original:
-            resnet = models.resnet50(pretrained=True)
+            resnet = models.resnet50(weights=ResNet50_Weights.DEFAULT)
             print('Creating model: No mask layers.')
         else:
             # Get the one with masks and pretrained model.
             resnet = modnets.resnet50(mask_init, mask_scale, threshold_fn)
-            resnet_pretrained = models.resnet50(pretrained=True)
+            resnet_pretrained = models.resnet50(weights=ResNet50_Weights.DEFAULT)
             # Copy weights from the pretrained to the modified model.
             for module, module_pretrained in zip(resnet.modules(), resnet_pretrained.modules()):
                 if 'ElementWise' in str(type(module)):
