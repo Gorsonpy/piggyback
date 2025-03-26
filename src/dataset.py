@@ -23,10 +23,10 @@ def train_loader(path, batch_size, num_workers=4, pin_memory=False, normalize=No
     return data.DataLoader(
         datasets.ImageFolder(path,
                              transforms.Compose([
-                                 transforms.Scale(256),
-                                 transforms.RandomSizedCrop(224),
+                                 transforms.RandomResizedCrop(224),
                                  transforms.RandomHorizontalFlip(),
                                  transforms.ToTensor(),
+                                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
                                  normalize,
                              ])),
         batch_size=batch_size,
@@ -42,7 +42,7 @@ def test_loader(path, batch_size, num_workers=4, pin_memory=False, normalize=Non
     return data.DataLoader(
         datasets.ImageFolder(path,
                              transforms.Compose([
-                                 transforms.Scale(256),
+                                 transforms.Resize(256),
                                  transforms.CenterCrop(224),
                                  transforms.ToTensor(),
                                  normalize,
